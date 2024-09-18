@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 TOKEN = os.getenv("DISCORD_TOKEN") 
-CLUB_ID = os.getenv("CHANNEL") 
+CLUB_ID = 1059961056090398730 
 
 # TENOR apikey and limit
 TENOR_APIKEY = os.getenv("TENOR_APIKEY") 
