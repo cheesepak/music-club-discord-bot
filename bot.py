@@ -211,6 +211,11 @@ async def on_ready():
         called_once_a_day_at_midnight.start()
         print(f"Starting Midnight Task")
 
+@bot.event       
+async def on_disconnect(self):
+    print('Disconnected! Attempting to reconnect...')
+    await self.connect()
+
 # --- Commands ----------------------------------------------------------------------------------- #     
 # --- Album Commands - Set albums based on the trigger and bot responds it in the designated channel
 
@@ -323,21 +328,22 @@ async def on_command_error(ctx, error):
     if isinstance(error, discord.ext.commands.errors.CommandNotFound):
         await ctx.send("Sorry, that command wasn't found... 😩")
 
-# --- Utility Commands --- 
-# Manual Thread Title Edit: in case the midnight task did not complete for some reason 
-# or a title change is necessary
+# --- Utility Commands --------------------------------------------------------------------------- #        
+# Fixtitle: in case the midnight task did not complete for some reason or a title change is necessary
 @bot.command(aliases=['manual'])
 async def fixtitle(ctx):
+    print("checking date")
     latest_date = check_date()
+    print(latest_date)
     try:
         mu_album = find_album(latest_date, TODAY)
         thread = bot.get_channel(CLUB_ID)
-
+        print(thread)
         activity_str = f"{mu_album[1]} - {mu_album[2]}"
-        
+        print(f"{mu_album[1]} - {mu_album[2]}")
         # Checks string length and truncates to fit character limit if necessary
         activity_str_truc = activity_str[:LIMIT] + ('...' if len(activity_str) > LIMIT else '')
-
+        print(activity_str_truc)
         # Set and change client's activity
         client_activity = (activity_str_truc)
         await bot.change_presence(status=discord.Status.idle, activity=discord.Game(client_activity))
