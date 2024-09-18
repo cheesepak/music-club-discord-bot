@@ -7,8 +7,12 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## Unreleased 
 - **To Do**: *Add logging (for troubleshooting)*
 - **To Do**: *Add !thisweek which posts all of this week's music*
+
+### 0.5.6
 - Added !restart for bot owner only
 - Changed !fixdate so any user can trigger
+- Fixed issue with finding the thread ID
+- Fixed disconnecting exception (hopefully)
 
 ### 0.5.5
 - Added .env for uploading publically on Github
