@@ -1,5 +1,7 @@
-# settings.py
+# --- settings.py -------------------------------------------------------------------------------- #
 import os
+import logging
+from logging.config import dictConfig
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -25,3 +27,52 @@ CREDENTIALS = {
   "auth_provider_x509_cert_url": os.getenv("AUTH_X509_CERT_URL"),
   "client_x509_cert_url": os.getenv("CLIENT_X509_CERT_URL"),
 }
+
+
+# --- Logging ------------------------------------------------------------------------------------ #
+
+LOGGING_CONFIG = {
+    "version": 1,
+    "disabled_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "%(levelname)-8s | %(asctime)s - %(module)-10s : %(message)s"
+        },
+        "standard": {
+            "format": "%(levelname)-8s | %(name)-10s : %(message)s"
+        }
+    },
+    "handlers": {
+        "default": {
+            'level': "DEBUG",
+            'class': "logging.StreamHandler",
+            'formatter': "standard"
+        },
+        "console": {
+            'level': "WARNING",
+            'class': "logging.StreamHandler",
+            'formatter': "standard"
+        },
+        "file": {
+            'level': "INFO",
+            'class': "logging.FileHandler",
+            'filename': "app/logs/info.log",
+            'mode': "w",
+            'formatter': 'verbose'
+        }
+    },
+    "loggers": {
+        "bot": {
+            'handlers': ['default'],
+            "level": "DEBUG",
+            "propagate": False
+        },
+        "discord": {
+            'handlers': ['console', "file"],
+            "level": "INFO",
+            "propagate": False
+        }
+    }
+}
+
+dictConfig(LOGGING_CONFIG)
