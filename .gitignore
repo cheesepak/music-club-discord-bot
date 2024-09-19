@@ -159,6 +159,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# Other files people don't need
+# Ignore files
+/app/logs/info.log
 old/
 BUILD.md
