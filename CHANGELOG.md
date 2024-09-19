@@ -5,11 +5,13 @@ All notable changes to the Music Club Discord Bot will be documented in this fil
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
 ## Unreleased 
-- **To Do**: *Add logging (for troubleshooting)*
-- **To Do**: *Add !thisweek which posts all of this week's music*
+- **To Do**: *Add !thisweek / !lastweek / !nextweek which posts all of that week's music*
+- **To Do**: *Add ability to change date if a date is given (e.g. !fixdate 1/1/2025)*
+- **To Do**: *Change the way I'm handling the dockerization for allowing restarts*
 
 ### 0.5.6
-- Added !restart for bot owner only
+- Added logging
+- Added !restart for bot owner only but does not work dockerized
 - Changed !fixdate so any user can trigger
 - Fixed issue with finding the thread ID
 - Fixed disconnecting exception (hopefully)
