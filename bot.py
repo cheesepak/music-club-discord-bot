@@ -15,7 +15,9 @@ from datetime import datetime, timedelta, date
 from discord.ext import commands, tasks
 from settings import * 
 
-VERSION = "0.5.5"
+discord.VoiceClient.warn_nacl = False
+
+VERSION = "0.5.6"
 
 # Album Days
 TODAY = 0       
@@ -24,7 +26,6 @@ UPCOMING = 1
 UPUPCOMING = 2  
 ERROR = "Unable to find the album 🎶"
 LIMIT = 95 # Character Limit for thread titles
-
 gc = gspread.service_account_from_dict(CREDENTIALS)
 
 intents = discord.Intents().all()
@@ -59,7 +60,7 @@ def update_date_today():
     date_str = get_formatted_date()
     file = open('date.txt', 'w') 
     file.write(date_str)
-    print(f"Updated date.txt: ({file.read()})")
+    logger.info(f'Updated date.txt') #{file.read()}
     file.close()
 
 # Fetch album information from the Google spreadsheet
@@ -91,30 +92,29 @@ def seconds_until_midnight():
     # --- Tester ---
     #target = (now + timedelta(days=0)).replace(hour=10, minute=22, second=0, microsecond=0) 
     diff = (target - now).total_seconds()
-    print(f"Seconds Until Midnight: {target} - {now} = {diff}")
+    logger.info(f'Secs til Midnight: {target} - {now} = {diff}')
     return diff
 
 def seconds_until_10am():
     now = datetime.now()
     target = (now + timedelta(days=1)).replace(hour=10, minute=1, second=0, microsecond=0)
     diff = (target - now).total_seconds()
-    print(f"Seconds Until 10AM: {target} - {now} = {diff}")
+    logger.info(f'Seconds Until 10AM: {target} - {now} = {diff}')
     return diff
 
 # Edit thread to today's album on one server and post an embed message in a music channel on another
 @tasks.loop(hours=24)
 async def called_once_a_day_at_midnight():
     await asyncio.sleep(seconds_until_midnight())
-    
-    print(f"Midnight tasks begin ({datetime.now()})")
+    logger.info(f'Midnight tasks begin ({datetime.now()})')
+
     date_str = get_formatted_date()
     weekday = datetime.now().weekday()
-    print(f"- {date_str}, {weekday}")
 
     if weekday in {0, 2, 4}:
         file = open('date.txt', 'w+') 
         file.write(date_str)
-        print(f"- Updated date.txt") # ({file.read()})
+        logger.info(f"Updated date.txt: {date_str}, {weekday}")
         file.close()
 
     latest_date = check_date()
@@ -141,12 +141,16 @@ async def called_once_a_day_at_midnight():
         # Edit thread name to today's album
         thread = bot.get_channel(CLUB_ID)
         await thread.edit(name=title_str_truc)
-        print("- Updated thread name and client activity")
+        logger.info(f"Updated thread name and client activity")
     else:  
-        print("- No album found for today")
+        logger.info(f"No album found for today")
 
     # if Monday, post the week's albums, if Wed or Fri, just post that day's album
     if weekday == 0: 
+        # --- To Do -----------------------
+        # if weekday == 0
+        #   write monday's date to week.txt
+
         try:
             # The big weekly music post
             embed = discord.Embed(title="🎵 This Week's Oubliette Essential Albums 🎵", 
@@ -167,54 +171,56 @@ And if yoooooou can believe it, it's a **Monday** *once* ***again*** ✨
             description=f"Today's /{mu_album[0]}/core album is {mu_album[1]} - {mu_album[2]}. It's a {mu_album[4]} kind of day.", 
             color=discord.Color.teal())
             await message_channel.send(embed=embed2)
-            print("- Posted this week's album in the thread")
-            print("- Posted today's album in the thread")
 
             # Posts random gif of band
             gif_url = random.choice(get_gif(f"{mu_album[1]} band")['results'])['url']
             await message_channel.send(gif_url) 
             await message_channel.send(f"gif of {mu_album[1]} 😩 via Tenor")  
-            print("- Posted gif of band")
+
+            logger.info(f"Posted this week's & today's album in thread")
 
         except (IndexError, AttributeError) as e:
             await message_channel.send("Unable to find this week's album 🎶")
-            print("Error: ", e)
+            logger.error(f"Error: {e}")
     elif weekday in {2, 4}:
         try:
             embed = discord.Embed(title="🎵 Today's Oubliette Essentials Album 🎵", 
             description=f"Today's /{mu_album[0]}/core album is {mu_album[1]} - {mu_album[2]}. It's a {mu_album[4]} kind of day.", 
             color=discord.Color.teal())
             await message_channel.send(embed=embed)
-            print("- Posted today's album in the thread")
 
             # Posts random gif of band
             gif_url = random.choice(get_gif(f"{mu_album[1]} band")['results'])['url']
             await message_channel.send(gif_url) 
             await message_channel.send(f"gif of {mu_album[1]} 😩 via Tenor")  
-            print("- Posted gif of band")
-        except (IndexError, AttributeError) as e:
-                await message_channel.send(ERROR)
-                print("Error: ", e)
 
-    print(f"Midnight tasks completed")
+            logger.info(f"Posted today's album in thread")
+
+        except (IndexError, AttributeError) as e:
+            await message_channel.send(ERROR)
+            logger.error(f"Error: {e}")
+
+    logger.info(f"Midnight tasks completed")
 
 # --- On Ready ----------------------------------------------------------------------------------- #
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} has connected to Discord!')
+
+    logger.info(f'{bot.user} has connected to Discord! {bot.user.id}')
+
     latest_date = check_date()
     mu_album = find_album(latest_date, TODAY)
     client_activity = (f"{mu_album[1]} - {mu_album[2]}")
     await bot.change_presence(status=discord.Status.idle, activity=discord.Game(client_activity))
     if not called_once_a_day_at_midnight.is_running():
         called_once_a_day_at_midnight.start()
-        print(f"Starting Midnight Task")
+        logger.info(f"Starting Midnight Task")
 
 @bot.event       
-async def on_disconnect(self):
-    print('Disconnected! Attempting to reconnect...')
-    await self.connect()
+async def on_disconnect():
+    logger.warning(f"Disconnected! Attempting to reconnect...")
+    await bot.connect()
 
 # --- Commands ----------------------------------------------------------------------------------- #     
 # --- Album Commands - Set albums based on the trigger and bot responds it in the designated channel
@@ -238,8 +244,8 @@ async def today(ctx):
             await ctx.send(embed=embed)
     except (IndexError, AttributeError) as e:
             await ctx.send(ERROR)
-            print("Error: ", e)
-    print(f'{ctx.message.author} triggered !today')
+            logger.error(f"Error: {e}")
+    logger.info(f'{ctx.message.author} triggered !today')
 
 @bot.command(aliases=['genre'])
 async def mood(ctx):
@@ -249,8 +255,8 @@ async def mood(ctx):
         await ctx.send(f"It's a {mu_album[4]} kind of day.")
     except (IndexError, AttributeError) as e:
             await ctx.send(ERROR)
-            print("Error: ", e)
-    print(f'{ctx.message.author} triggered !mood')
+            logger.error(f"Error: {e}")
+    logger.info(f'{ctx.message.author} triggered !mood')
 
 # --- Previous album ---
 @bot.command(aliases=['prev'])
@@ -264,8 +270,8 @@ async def previous(ctx):
         await ctx.send(embed=embed)
     except (IndexError, AttributeError) as e:
             await ctx.send(ERROR)
-            print("Error: ", e)
-    print(f'{ctx.message.author} triggered !previous')  
+            logger.error(f"Error: {e}")
+    logger.info(f'{ctx.message.author} triggered !previous')
 
 # --- Upcoming album ---
 @bot.command(aliases=['next'])
@@ -279,8 +285,9 @@ async def upcoming(ctx):
         await ctx.send(embed=embed)
     except (IndexError, AttributeError) as e:
         await ctx.send(ERROR)
-        print("Error: ", e)    
-    print(f'{ctx.message.author} triggered !upcoming')  
+        logger.error(f"Error: {e}")   
+        
+    logger.info(f'{ctx.message.author} triggered !upcoming')
 
 # --- Upupcoming album (album after next) ---
 @bot.command()
@@ -294,20 +301,23 @@ async def upupcoming(ctx):
         await ctx.send(embed=embed)
     except (IndexError, AttributeError) as e:
         await ctx.send(ERROR)
-        print("Error: ", e)
-    print(f'{ctx.message.author} triggered !upupcoming')
+        logger.error(f"Error: {e}")
+
+    logger.info(f'{ctx.message.author} triggered !upupcoming')
 
 # --- gifposting ---
 # Coming: posts a random gif of dreamybull using Tenor API OR random gif of whatever user input is, joke derived from upcoming
-@bot.command(aliases=['cum', 'gif'])
+@bot.command(aliases=['coming'])
 @commands.cooldown(1, 5, commands.BucketType.guild)
-async def coming(ctx,*,search_term:str=None):
+async def gif(ctx,*,search_term:str=None):
     if not search_term:
         search_term = "dreamybull"
     gif_url = random.choice(get_gif(search_term)['results'])['url']
     await ctx.send(gif_url) 
     await ctx.send(f"gif of {search_term} 😩 via Tenor")  
-    print(f'{ctx.message.author} triggered !coming @ {datetime.now()} | {gif_url}')  
+
+    logger.info(f'{ctx.message.author} triggered !coming') 
+    logger.debug(f'gif: {datetime.now()} | {gif_url}') 
 
 # Posts a gif of the band
 @bot.command(aliases=['vibe'])
@@ -319,10 +329,14 @@ async def vibes(ctx):
         gif_url = random.choice(get_gif(f"{mu_album[1]} band")['results'])['url']
         await ctx.send(gif_url) 
         await ctx.send(f"gif of {mu_album[1]} 😩 via Tenor")  
-        print(f'{ctx.message.author} triggered !vibes @ {datetime.now()} | {gif_url}')  
+
+        logger.info(f'{ctx.message.author} triggered !vibes') 
+        logger.debug(f'gif: {datetime.now()} | {gif_url}') 
+
     except (IndexError, AttributeError) as e:
         await ctx.send(ERROR)
-        print("Error: ", e)
+        logger.error(f"Error: {e}")
+
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, discord.ext.commands.errors.CommandNotFound):
@@ -332,18 +346,18 @@ async def on_command_error(ctx, error):
 # Fixtitle: in case the midnight task did not complete for some reason or a title change is necessary
 @bot.command(aliases=['manual'])
 async def fixtitle(ctx):
-    print("checking date")
+
     latest_date = check_date()
-    print(latest_date)
+
     try:
         mu_album = find_album(latest_date, TODAY)
         thread = bot.get_channel(CLUB_ID)
-        print(thread)
+
         activity_str = f"{mu_album[1]} - {mu_album[2]}"
-        print(f"{mu_album[1]} - {mu_album[2]}")
+
         # Checks string length and truncates to fit character limit if necessary
         activity_str_truc = activity_str[:LIMIT] + ('...' if len(activity_str) > LIMIT else '')
-        print(activity_str_truc)
+
         # Set and change client's activity
         client_activity = (activity_str_truc)
         await bot.change_presence(status=discord.Status.idle, activity=discord.Game(client_activity))
@@ -357,8 +371,9 @@ async def fixtitle(ctx):
         await ctx.send("Set the thread title 🎶")
     except (IndexError, AttributeError) as e:
         await ctx.send("Unable to set the thread title 🎶")
-        print("Error: ", e)
-    print(f'{ctx.message.author} triggered !fixtitle') 
+        logger.error(f"Error: {e}")
+
+    logger.info(f'{ctx.message.author} triggered !fixtitle') 
 
 # Sets the data.txt to today | Todo: allow for date to be written in by a user if a date is given
 @bot.command()
@@ -372,15 +387,17 @@ async def fixdate(ctx):
         file.close()
     except (IndexError, AttributeError) as e:
         await ctx.send("Error: ", e)
-    print(f'{ctx.message.author} triggered !fixdate')
 
+    logger.info(f'{ctx.message.author} triggered !fixdate') 
+    
 @bot.command()
 async def checkdate(ctx):
     datetime_str = get_formatted_date()
     file = open('date.txt', 'r') 
     await ctx.send(f"Date on file is {file.read()} 📆")
     file.close()
-    print(f'{ctx.message.author} triggered !checkdate')
+    
+    logger.info(f'{ctx.message.author} triggered !checkdate') 
 
 # --- Help ---
 @bot.command(aliases=['h'])
@@ -400,7 +417,9 @@ async def help(ctx):
     embed.set_thumbnail(url="https://i.imgur.com/mLZdGql.png")
     embed.set_footer(text=f"Let me know if you have any feature requests.\nMusic Club Bot {VERSION}")
     await ctx.channel.send(embed=embed)
-    print(f'{ctx.message.author} triggered !help')
+
+    logger.info(f'{ctx.message.author} triggered !help') 
+
 
 # --- Debugging / Testing ------------------------------------------------------------------------ #
     
@@ -409,7 +428,7 @@ async def help(ctx):
 async def ping(ctx):
     await ctx.reply(f"Pong! 🏓")
     await ctx.send(f'>>> {round(bot.latency * 1000)} ms')
-    print(f'{ctx.message.author} pinged client')
+    logger.info(f'{ctx.message.author} pinged client')
 
 # --- Restarts bot ---
 @bot.command(name= 'restart')
@@ -420,12 +439,15 @@ async def restart(ctx):
     # Re-run the script using subprocess
     python = sys.executable
     script = sys.argv[0]
-    
-    # Restart the bot using subprocess
-    subprocess.Popen([python, script])
-    
-    # Optionally exit the current process
-    await bot.close()
+    try:
+        # Restart the bot using subprocess
+        subprocess.Popen([python, script])
+
+        # Exit the current process
+        await bot.close()
+    except Exception as e:
+        logger.error(f"Error during restart: {e}")
+       
     sys.exit()
 
 # --- Generic test command ---
@@ -455,9 +477,11 @@ async def test(ctx):
     embed.set_thumbnail(url="https://i.imgur.com/bJVDPc0.png")
     await ctx.send(embed=embed)
 
-    print(f'{ctx.message.author} triggered !test')
+    logger.info(f'{ctx.message.author} triggered !test')
 
 # --- Run ---------------------------------------------------------------------------------------- #
+
+logger = logging.getLogger("bot")
     
-bot.run(TOKEN)
+bot.run(TOKEN, root_logger=True)
 
