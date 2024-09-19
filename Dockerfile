@@ -15,11 +15,14 @@ COPY settings.py ./
 COPY date.txt ./
 COPY .env ./
 
+# Create logs directory
+RUN mkdir /app/logs
+
 # Install additional packages
 RUN apt-get update && \
     apt-get install -y tzdata && \
     ln -fs /usr/share/zoneinfo/America/Los_Angeles /etc/localtime && \
     dpkg-reconfigure -f noninteractive tzdata
 
-# Container start
-CMD ["python", "./bot.py"]
+# Container start / -u : unbuffered binary stdout
+CMD ["python", "-u", "./bot.py"]
