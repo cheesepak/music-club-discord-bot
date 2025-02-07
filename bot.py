@@ -17,7 +17,7 @@ from settings import *
 
 discord.VoiceClient.warn_nacl = False
 
-VERSION = "0.5.6"
+VERSION = "0.5.7"
 
 # Album Days
 TODAY = 0       
@@ -25,6 +25,7 @@ PREVIOUS = -1
 UPCOMING = 1    
 UPUPCOMING = 2  
 ERROR = "Unable to find the album 🎶"
+ERROR_MIDNIGHT = "Issue found during midnight tasks."
 LIMIT = 95 # Character Limit for thread titles
 gc = gspread.service_account_from_dict(CREDENTIALS)
 
@@ -36,7 +37,7 @@ bot.remove_command('help')
 
 # The /mu/core Google spreadsheet
 mu = gc.open("mu core")
-musheet =  mu.sheet1
+musheet = mu.sheet1
 
 # --- Functions ---------------------------------------------------------------------------------- #
 
@@ -90,17 +91,17 @@ def seconds_until_midnight():
     now = datetime.now()
     target = (now + timedelta(days=1)).replace(hour=0, minute=2, second=0, microsecond=0)
     # --- Tester ---
-    #target = (now + timedelta(days=0)).replace(hour=10, minute=22, second=0, microsecond=0) 
+    #target = (now + timedelta(days=0)).replace(hour=13, minute=43, second=0, microsecond=0) 
     diff = (target - now).total_seconds()
     logger.info(f'Secs til Midnight: {target} - {now} = {diff}')
     return diff
 
-def seconds_until_10am():
-    now = datetime.now()
-    target = (now + timedelta(days=1)).replace(hour=10, minute=1, second=0, microsecond=0)
-    diff = (target - now).total_seconds()
-    logger.info(f'Seconds Until 10AM: {target} - {now} = {diff}')
-    return diff
+# def seconds_until_10am():
+#     now = datetime.now()
+#     target = (now + timedelta(days=1)).replace(hour=10, minute=1, second=0, microsecond=0)
+#     diff = (target - now).total_seconds()
+#     logger.info(f'Seconds Until 10AM: {target} - {now} = {diff}')
+#     return diff
 
 # Edit thread to today's album on one server and post an embed message in a music channel on another
 @tasks.loop(hours=24)
@@ -180,7 +181,7 @@ And if yoooooou can believe it, it's a **Monday** *once* ***again*** ✨
             logger.info(f"Posted this week's & today's album in thread")
 
         except (IndexError, AttributeError) as e:
-            await message_channel.send("Unable to find this week's album 🎶")
+            await message_channel.send(ERROR_MIDNIGHT)
             logger.error(f"Error: {e}")
     elif weekday in {2, 4}:
         try:
@@ -197,7 +198,7 @@ And if yoooooou can believe it, it's a **Monday** *once* ***again*** ✨
             logger.info(f"Posted today's album in thread")
 
         except (IndexError, AttributeError) as e:
-            await message_channel.send(ERROR)
+            await message_channel.send(ERROR_MIDNIGHT)
             logger.error(f"Error: {e}")
 
     logger.info(f"Midnight tasks completed")
@@ -220,7 +221,7 @@ async def on_ready():
 @bot.event       
 async def on_disconnect():
     logger.warning(f"Disconnected! Attempting to reconnect...")
-    await bot.connect()
+    # await bot.connect()
 
 # --- Commands ----------------------------------------------------------------------------------- #     
 # --- Album Commands - Set albums based on the trigger and bot responds it in the designated channel
@@ -381,9 +382,10 @@ async def fixtitle(ctx):
 async def fixdate(ctx):
     datetime_str = get_formatted_date()
     try:
-        file = open('date.txt', 'w') 
+        file = open('date.txt', 'w+') 
         file.write(datetime_str)
-        await ctx.send(f"Fixed the date: now {file.read()} 📆") 
+        file.seek(0) 
+        await ctx.send(f"Date on file is now {file.read()} 📆") 
         file.close()
     except (IndexError, AttributeError) as e:
         await ctx.send("Error: ", e)
