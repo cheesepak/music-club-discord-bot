@@ -5,8 +5,16 @@ All notable changes to the Music Club Discord Bot will be documented in this fil
 ## Unreleased
 
 - **To Do**: _Add !thisweek / !lastweek / !nextweek which posts all of that week's music_
-- **To Do**: _Add ability to change date if a date is given (e.g. !fixdate 1/1/2025)_
+- **To Do**: _Add ability to adjust setup features (which days of the week bot triggers, etc)_
 - **To Do**: _Change the way I'm handling the dockerization for allowing restarts_
+
+## 0.6.0
+
+- Added ability to change a date using !fixdate and a custom date given (e.g. !fixdate 1/1/2025)
+- Added some bits of setup instructions to README.md
+- Changed the days of the week for the new club schedule.
+- Changed titles for commands to include the worksheet name
+- Fixed error if date was not on the spreadsheet
 
 ### 0.5.7
 

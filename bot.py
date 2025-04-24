@@ -17,7 +17,7 @@ from settings import *
 
 discord.VoiceClient.warn_nacl = False
 
-VERSION = "0.5.7"
+VERSION = "0.6.0"
 
 # Album Days
 TODAY = 0       
@@ -36,7 +36,7 @@ bot = commands.Bot(command_prefix='!', intents=intents, case_insensitive=True)
 bot.remove_command('help') 
 
 # The /mu/core Google spreadsheet
-mu = gc.open("mu core")
+mu = gc.open("Oubliette listens (mu core)")
 musheet = mu.sheet1
 
 # --- Functions ---------------------------------------------------------------------------------- #
@@ -67,9 +67,15 @@ def update_date_today():
 # Fetch album information from the Google spreadsheet
 def find_album(date_str_in, adjacent_in):
     date_cell = musheet.find(date_str_in) #find matching cell in spreadsheet, substringed to match
-    # A = Date, B = Username, C = Artist, D = Album, E = Genre, F = Track Highlight, G = Notes
-    mu_album = [musheet.get(('A%s') % (date_cell.row + adjacent_in)), musheet.get(('B%s') % (date_cell.row + adjacent_in)), musheet.get(('C%s') % (date_cell.row + adjacent_in)), musheet.get(('D%s') % (date_cell.row + adjacent_in)), musheet.get(('E%s') % (date_cell.row + adjacent_in)), musheet.get(('F%s') % (date_cell.row + adjacent_in)),musheet.get(('G%s') % (date_cell.row + adjacent_in))]
-    mu_album_str = (mu_album[0][0][0], mu_album[1][0][0], mu_album[2][0][0], mu_album[3][0][0], mu_album[4][0][0])
+
+    try:
+        # A = Date, B = Username, C = Artist, D = Album, E = Genre, F = Track Highlight, G = Notes
+        mu_album = [musheet.get(('A%s') % (date_cell.row + adjacent_in)), musheet.get(('B%s') % (date_cell.row + adjacent_in)), musheet.get(('C%s') % (date_cell.row + adjacent_in)), musheet.get(('D%s') % (date_cell.row + adjacent_in)), musheet.get(('E%s') % (date_cell.row + adjacent_in))] 
+        #, musheet.get(('F%s') % (date_cell.row + adjacent_in)), musheet.get(('G%s') % (date_cell.row + adjacent_in))
+        mu_album_str = (mu_album[0][0][0], mu_album[1][0][0], mu_album[2][0][0], mu_album[3][0][0], mu_album[4][0][0])
+    except Exception as e:
+        print(f"Error accessing cell: {e}")
+        mu_album_str = ("N/A", "N/A", "N/A", "N/A", "N/A")
     return mu_album_str 
 
 # TENOR gif search
@@ -112,7 +118,8 @@ async def called_once_a_day_at_midnight():
     date_str = get_formatted_date()
     weekday = datetime.now().weekday()
 
-    if weekday in {0, 2, 4}:
+    #if weekday in {0, 2, 4}:
+    if weekday in {1, 3}:
         file = open('date.txt', 'w+') 
         file.write(date_str)
         logger.info(f"Updated date.txt: {date_str}, {weekday}")
@@ -147,7 +154,7 @@ async def called_once_a_day_at_midnight():
         logger.info(f"No album found for today")
 
     # if Monday, post the week's albums, if Wed or Fri, just post that day's album
-    if weekday == 0: 
+    if weekday == 9: #changed weekday to 9 since I don't want this running rn but commenting out shit sucks in python
         # --- To Do -----------------------
         # if weekday == 0
         #   write monday's date to week.txt
@@ -183,7 +190,8 @@ And if yoooooou can believe it, it's a **Monday** *once* ***again*** ✨
         except (IndexError, AttributeError) as e:
             await message_channel.send(ERROR_MIDNIGHT)
             logger.error(f"Error: {e}")
-    elif weekday in {2, 4}:
+    # elif weekday in {2, 4}:
+    elif weekday in {1, 3}:
         try:
             embed = discord.Embed(title="🎵 Today's Oubliette Essentials Album 🎵", 
             description=f"Today's /{mu_album[0]}/core album is {mu_album[1]} - {mu_album[2]}. It's a {mu_album[4]} kind of day.", 
@@ -234,12 +242,12 @@ async def today(ctx):
         mu_album = find_album(latest_date, TODAY)
         date_str = get_formatted_date()
         if date_str == mu_album[3]:
-            embed = discord.Embed(title="🎵 Today's Oubliette Essentials Album 🎵", 
+            embed = discord.Embed(title=f"🎵 Today's Album - {musheet.title} 🎵", 
             description=f"Today's /{mu_album[0]}/core album is {mu_album[1]} - {mu_album[2]}. It's a {mu_album[4]} kind of day.", 
             color=discord.Color.teal())
             await ctx.send(embed=embed)
         else:
-            embed = discord.Embed(title="🎵 Current Oubliette Essentials Album 🎵", 
+            embed = discord.Embed(title=f"🎵 Current Album - {musheet.title}🎵", 
             description=f"The current /{mu_album[0]}/core album is {mu_album[1]} - {mu_album[2]}. It's a {mu_album[4]} kind of day.", 
             color=discord.Color.teal())
             await ctx.send(embed=embed)
@@ -265,7 +273,7 @@ async def previous(ctx):
     latest_date = check_date()
     try:
         mu_album = find_album(latest_date, PREVIOUS)
-        embed = discord.Embed(title="Previous Oubliette Essentials Album", 
+        embed = discord.Embed(title=f"Previous Album - {musheet.title}", 
         description=f"Previous /{mu_album[0]}/core album is {mu_album[1]} - {mu_album[2]}. It was a {mu_album[4]} kind of day.", 
         color=discord.Color.dark_teal())
         await ctx.send(embed=embed)
@@ -280,7 +288,7 @@ async def upcoming(ctx):
     latest_date = check_date()
     try:
         mu_album = find_album(latest_date, UPCOMING)
-        embed = discord.Embed(title="Upcoming Oubliette Essentials Album", 
+        embed = discord.Embed(title=f"Upcoming Album - {musheet.title}", 
         description=f"Next /{mu_album[0]}/core album is {mu_album[1]} - {mu_album[2]}. It will be a {mu_album[4]} kind of day.", 
         color=discord.Color.dark_teal())
         await ctx.send(embed=embed)
@@ -379,8 +387,28 @@ async def fixtitle(ctx):
 # Sets the data.txt to today | Todo: allow for date to be written in by a user if a date is given
 @bot.command()
 # @commands.is_owner() 
-async def fixdate(ctx):
-    datetime_str = get_formatted_date()
+async def fixdate(ctx, custom_date: str = None):
+    if custom_date:
+        try:
+            # Common date formats
+            possible_formats = ['%m/%d/%Y', '%m-%d-%Y', '%Y-%m-%d', '%Y/%m/%d','%d/%m/%Y', '%d-%m-%Y']
+            for fmt in possible_formats:
+                try:
+                    date_object = datetime.strptime(custom_date, fmt)
+                    break
+                except ValueError:
+                    continue
+            else:
+                await ctx.send("Invalid date format. I'm looking for MM/DD/YYYY.")
+                return
+            
+            datetime_str = f"{date_object.month}/{date_object.day}/{date_object.year}"
+        except Exception as e:
+            await ctx.send(f"Error parsing date: {e}")
+            return
+    else:
+        datetime_str = get_formatted_date()
+
     try:
         file = open('date.txt', 'w+') 
         file.write(datetime_str)
