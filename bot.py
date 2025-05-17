@@ -17,7 +17,7 @@ from settings import *
 
 discord.VoiceClient.warn_nacl = False
 
-VERSION = "0.6.0"
+VERSION = "0.6.1"
 
 # Album Days
 TODAY = 0       
@@ -119,7 +119,7 @@ async def called_once_a_day_at_midnight():
     weekday = datetime.now().weekday()
 
     #if weekday in {0, 2, 4}:
-    if weekday in {1, 3}:
+    if weekday in {0, 3}:
         file = open('date.txt', 'w+') 
         file.write(date_str)
         logger.info(f"Updated date.txt: {date_str}, {weekday}")
@@ -191,7 +191,7 @@ And if yoooooou can believe it, it's a **Monday** *once* ***again*** ✨
             await message_channel.send(ERROR_MIDNIGHT)
             logger.error(f"Error: {e}")
     # elif weekday in {2, 4}:
-    elif weekday in {1, 3}:
+    elif weekday in {0, 3}:
         try:
             embed = discord.Embed(title="🎵 Today's Oubliette Essentials Album 🎵", 
             description=f"Today's /{mu_album[0]}/core album is {mu_album[1]} - {mu_album[2]}. It's a {mu_album[4]} kind of day.", 
