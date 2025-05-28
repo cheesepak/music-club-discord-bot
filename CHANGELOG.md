@@ -9,6 +9,10 @@ All notable changes to the Music Club Discord Bot will be documented in this fil
 - **To Do**: _Change !fixdate to check the worksheet and verify the date is there before changing_
 - **To Do**: _Change the way I'm handling the dockerization for allowing restarts_
 
+### 0.6.2
+
+- Fixed unintended trigger of bot (!!, !!!, etc)
+
 ### 0.6.1
 
 - Changed the days of the week for the new club schedule.
