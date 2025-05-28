@@ -40,6 +40,15 @@ mu = gc.open("Oubliette listens (mu core)")
 musheet = mu.sheet1
 
 # --- Functions ---------------------------------------------------------------------------------- #
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    if message.content.startswith('!!'): # So folks can react like !!! without triggering the bot
+        return  
+
+    await bot.process_commands(message)
 
 # Handles the date format #/#/#### based on OS
 def get_formatted_date():
